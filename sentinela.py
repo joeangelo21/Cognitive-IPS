@@ -1,45 +1,57 @@
 import threading
 import time
 import os
+import logging
 from queue import Queue
 from collections import defaultdict, deque
-import logging
-from scapy.all import sniff, IP, TCP, Raw
+from scapy.all import sniff, IP
 
 # ==========================
-# CONFIGURAÇÕES (MODO LOCAL)
+# CONFIGURAÇÕES
 # ==========================
 LOG_FILE = "monitoramento_rede.log"
-TEMP_LOG = "telemetria.log"
-
-# Lista branca genérica para não banir o próprio sistema
 WHITELIST = {"127.0.0.1", "192.168.1.1", "192.168.1.5"}
 
-# Limites de detecção
-PORT_SCAN_LIMIT = 20
-PORT_SCAN_WINDOW = 30
-PAYLOAD_MAX_BYTES = 500
+# Configuração do Logger
+logging.basicConfig(filename=LOG_FILE, level=logging.INFO, 
+                    format='%(asctime)s - %(message)s')
 
-log_queue = Queue()
-IP_BANNED = set()
-IP_VOLUME_HISTORY = defaultdict(lambda: {"total": 0})
-PORT_SCAN_TRACKER = defaultdict(deque)
+IP_VOLUME_HISTORY = defaultdict(lambda: {"total": 0, "last_seen": time.time()})
 data_lock = threading.Lock()
 logs_conexao = deque(maxlen=10)
 
 def packet_callback(packet):
-    if IP in packet:
-        ip_src = packet[IP].src
-        if ip_src in WHITELIST:
-            return
-        
-        with data_lock:
-            IP_VOLUME_HISTORY[ip_src]["total"] += len(packet)
-            logs_conexao.append(f"Atividade detectada de: {ip_src}")
+    try:
+        if IP in packet:
+            ip_src = packet[IP].src
+            if ip_src in WHITELIST:
+                return
+            
+            with data_lock:
+                IP_VOLUME_HISTORY[ip_src]["total"] += len(packet)
+                IP_VOLUME_HISTORY[ip_src]["last_seen"] = time.time()
+                msg = f"Atividade: {ip_src} ({len(packet)} bytes)"
+                logs_conexao.append(msg)
+                logging.info(msg)
+    except Exception as e:
+        logging.error(f"Erro na captura: {e}")
 
-# Inicia a captura
+def limpar_memoria():
+    """Remove IPs inativos há mais de 60 segundos."""
+    while True:
+        time.sleep(60)
+        with data_lock:
+            agora = time.time()
+            para_remover = [ip for ip, dados in IP_VOLUME_HISTORY.items() 
+                            if agora - dados["last_seen"] > 60]
+            for ip in para_remover:
+                del IP_VOLUME_HISTORY[ip]
+
 def iniciar_sniff():
-    sniff(filter="ip", prn=packet_callback, store=False)
+    try:
+        sniff(filter="ip", prn=packet_callback, store=False)
+    except Exception as e:
+        logging.critical(f"Sniffer parou: {e}")
 
 def analyzer():
     while True:
@@ -50,19 +62,25 @@ def analyzer():
             
         print("\033[H\033[J", end="") 
         print("=================================================")
-        print(f"               SENTINELA v3.1 LOCAL             ")
+        print(f"            SENTINELA v3.2 [PROD READY]         ")
         print("=================================================")
-        print(f"{'IP Remetente':<25} {'Tráfego (KB)'}")
+        print(f"{'IP Remetente':<25} {'Tráfego (KB)':<15}")
         print("-" * 50)
         
         for ip, dados in snapshot.items():
-            print(f"{ip:<25} {round(dados['total'] / 1024, 2)} KB")
+            print(f"{ip:<25} {round(dados['total'] / 1024, 2):>10} KB")
             
-        print("\n[MURAL DE EVENTOS EM TEMPO REAL]")
+        print("\n[MURAL DE EVENTOS]")
         print("-" * 50)
-        for _linha in exibicao: print(_linha)
+        for linha in exibicao: print(linha)
 
 if __name__ == "__main__":
-    t1 = threading.Thread(target=iniciar_sniff, daemon=True)
-    t1.start()
-    analyzer()
+    # Thread de monitoramento
+    threading.Thread(target=iniciar_sniff, daemon=True).start()
+    # Thread de limpeza automática (Aging)
+    threading.Thread(target=limpar_memoria, daemon=True).start()
+    
+    try:
+        analyzer()
+    except KeyboardInterrupt:
+        print("\n[*] Sentinela desligado. Logs salvos em", LOG_FILE)
