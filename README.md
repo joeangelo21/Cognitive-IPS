@@ -1,4 +1,36 @@
-# Projeto_Seguran-a_Com_IA
+SegurancaComIA (Motor Cognitivo)
+O SegurancaComIA é um ecossistema de defesa cibernética de alta performance, projetado para monitoramento, análise semântica de tráfego e resposta ativa a incidentes. Diferente de sistemas tradicionais, ele utiliza inteligência artificial local para classificar payloads em tempo real.
+
+🏗️ Arquitetura de Defesa em Camadas
+O sistema opera através de dois módulos integrados:
+
+Camada 1 (Sensor/Sentinela): Implementada em monitor_network.py. Realiza a captura bruta de pacotes via Scapy, filtragem de tráfego e geração de telemetria persistente.
+
+Camada 2 (Cérebro/Motor Cognitivo): Implementada em auditoria.py. Consome os logs do Sentinela, analisa o contexto do payload através de modelos de IA (via Ollama) e executa bloqueios automáticos via iptables.
+
+🚀 Funcionalidades Principais
+Análise Semântica: Uso de LLMs (Qwen2.5) para identificar padrões de ataque que filtros de rede comuns ignorariam.
+
+Resposta Ativa (Active Defense): Integração direta com o netfilter (iptables) para banimento automático.
+
+Performance: Arquitetura desacoplada que não bloqueia o fluxo de rede enquanto processa a inferência da IA.
+
+Dashboard em Tempo Real: Monitoramento visual de temperatura de GPU, volume de tráfego e mural de vereditos de segurança.
+
+🛠️ Como rodar o ecossistema
+Inicie o Sensor:
+
+Bash
+sudo python3 monitor_network.py
+Inicie o Motor Cognitivo:
+
+Bash
+sudo python3 auditoria.py
+🛡️ Aviso Legal
+Este software é uma ferramenta experimental de defesa. O uso de automação de iptables requer privilégios de root e deve ser configurado cuidadosamente para evitar o bloqueio de serviços essenciais.
+
+✒️ Autor
+Joelson Angelo - Ethical Hacker | Python Developer# Projeto_Seguran-a_Com_IA
 Projeto de Segurança e IPS com IA local
 
 # Motor Cognitivo IPS
