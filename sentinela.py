@@ -11,22 +11,26 @@ from scapy.all import sniff, IP
 # =========================
 
 BUFFER_DIR = "/tmp/traffic_buffer"
-FEEDBACK_FILE = "feedback_ban.log"
+LOG_FILE = "sentinela.log"
 
 WHITELIST = {"127.0.0.1", "192.168.1.1", "192.168.1.5"}
 IP_BANNED = set()
 
-IP_VOLUME_HISTORY = defaultdict(int)
-data_lock = threading.Lock()
+IP_VOLUME = defaultdict(int)
+lock = threading.Lock()
+
+# =========================
+# LOG CONFIG
+# =========================
 
 logging.basicConfig(
-    filename="sentinela.log",
+    filename=LOG_FILE,
     level=logging.INFO,
     format="%(asctime)s - %(message)s"
 )
 
 # =========================
-# UTIL
+# FUNÇÕES
 # =========================
 
 def validar_ip(ip):
@@ -37,12 +41,16 @@ def validar_ip(ip):
         return False
 
 
+def log(msg):
+    print(msg)  # 👈 mostra na tela
+    logging.info(msg)
+
+
 def salvar_evento(evento):
     os.makedirs(BUFFER_DIR, exist_ok=True)
+    path = f"{BUFFER_DIR}/evt_{time.time_ns()}.json"
 
-    filename = f"{BUFFER_DIR}/evt_{time.time_ns()}.json"
-
-    with open(filename, "w") as f:
+    with open(path, "w") as f:
         json.dump(evento, f)
 
 
@@ -51,26 +59,29 @@ def salvar_evento(evento):
 # =========================
 
 def monitorar_feedback():
+    feedback_file = "feedback_ban.log"
+
     while True:
         try:
-            if os.path.exists(FEEDBACK_FILE):
-                with open(FEEDBACK_FILE, "r") as f:
+            if os.path.exists(feedback_file):
+                with open(feedback_file, "r") as f:
                     for line in f:
                         ip = line.strip()
                         if validar_ip(ip):
-                            with data_lock:
+                            with lock:
                                 IP_BANNED.add(ip)
+                                log(f"[BAN] IP adicionado: {ip}")
 
-                os.remove(FEEDBACK_FILE)
+                os.remove(feedback_file)
 
         except Exception as e:
-            logging.error(f"feedback error: {e}")
+            log(f"[FEEDBACK ERROR] {e}")
 
         time.sleep(2)
 
 
 # =========================
-# CAPTURA
+# CAPTURA DE PACOTES
 # =========================
 
 def packet_callback(packet):
@@ -79,6 +90,7 @@ def packet_callback(packet):
             return
 
         ip_src = packet[IP].src
+        size = len(packet)
 
         if not validar_ip(ip_src):
             return
@@ -86,22 +98,22 @@ def packet_callback(packet):
         if ip_src in WHITELIST or ip_src in IP_BANNED:
             return
 
+        with lock:
+            IP_VOLUME[ip_src] += size
+
         evento = {
             "ip": ip_src,
-            "size": len(packet),
+            "size": size,
             "summary": packet.summary(),
             "timestamp": time.time()
         }
 
-        with data_lock:
-            IP_VOLUME_HISTORY[ip_src] += evento["size"]
-
         salvar_evento(evento)
 
-        logging.info(f"EVENT {ip_src} {evento['size']}B")
+        log(f"[EVENTO] {ip_src} - {size} bytes")
 
     except Exception as e:
-        logging.error(f"packet error: {e}")
+        log(f"[ERRO PACKET] {e}")
 
 
 # =========================
@@ -109,7 +121,7 @@ def packet_callback(packet):
 # =========================
 
 def iniciar():
-    print("[*] Sentinela V2 ativo...")
+    log("[*] Sentinela iniciado...")
 
     threading.Thread(target=monitorar_feedback, daemon=True).start()
 

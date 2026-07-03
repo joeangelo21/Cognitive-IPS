@@ -3,8 +3,8 @@ import time
 import json
 import requests
 
-WATCH_DIR = "/tmp/traffic_buffer"
-MODELO = "qwen2.5-coder:3b"
+BUFFER_DIR = "/tmp/traffic_buffer"
+MODEL = "qwen2.5-coder:3b"
 
 # =========================
 # IA ANALYSIS
@@ -12,18 +12,18 @@ MODELO = "qwen2.5-coder:3b"
 
 def analisar(evento):
     prompt = f"""
-Você é um motor de análise de tráfego de rede.
+Você é um sistema de segurança de rede.
 
-Classifique o evento abaixo como:
+Classifique o tráfego como:
 - NORMAL
-- ATAQUE (XSS, SQLi, Exploit, Flood, Scan)
+- ATAQUE (SQLi, XSS, Scan, Exploit, Flood)
 
 Responda APENAS em JSON:
 
 {{
   "tipo": "NORMAL ou ATAQUE",
-  "categoria": "tipo do ataque ou none",
-  "confianca": 0-1
+  "categoria": "tipo de ataque ou none",
+  "confianca": 0.0 a 1.0
 }}
 
 Evento:
@@ -34,7 +34,7 @@ Evento:
         r = requests.post(
             "http://localhost:11434/api/generate",
             json={
-                "model": MODELO,
+                "model": MODEL,
                 "prompt": prompt,
                 "stream": False
             },
@@ -53,28 +53,29 @@ Evento:
 
 
 # =========================
-# PROCESSAMENTO
+# PROCESSADOR
 # =========================
 
-def processar_arquivo(path):
+def processar(path):
     try:
         with open(path, "r") as f:
             evento = json.load(f)
 
         resultado = analisar(evento)
 
-        print(f"\n[*] EVENTO: {evento['ip']} -> {resultado}")
+        print(f"\n[IA] {evento['ip']} -> {resultado}")
 
+        # decisão de bloqueio
         if resultado.get("tipo") == "ATAQUE":
             ip = evento["ip"]
 
             with open("feedback_ban.log", "a") as f:
                 f.write(ip + "\n")
 
-            print(f"[!] BANIDO: {ip}")
+            print(f"[!] BLOQUEIO ENVIADO: {ip}")
 
     except Exception as e:
-        print(f"[ERRO PROCESSAMENTO] {e}")
+        print(f"[ERRO] {e}")
 
     finally:
         try:
@@ -88,21 +89,21 @@ def processar_arquivo(path):
 # =========================
 
 def monitorar():
-    os.makedirs(WATCH_DIR, exist_ok=True)
+    os.makedirs(BUFFER_DIR, exist_ok=True)
 
-    print(f"[*] IA V2 rodando em {WATCH_DIR}")
+    print("[*] IA Analyzer rodando...")
 
     vistos = set()
 
     while True:
         try:
-            for file in os.listdir(WATCH_DIR):
-                path = os.path.join(WATCH_DIR, file)
+            for file in os.listdir(BUFFER_DIR):
+                path = os.path.join(BUFFER_DIR, file)
 
                 if path in vistos:
                     continue
 
-                processar_arquivo(path)
+                processar(path)
                 vistos.add(path)
 
         except Exception as e:
