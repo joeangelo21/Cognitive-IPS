@@ -1,44 +1,35 @@
 import threading
 import time
 import os
+import json
 import logging
 from collections import defaultdict
 from scapy.all import sniff, IP
 
 # =========================
-# CONFIGURAÇÕES
+# CONFIG
 # =========================
 
-LOG_FILE = "monitoramento_rede.log"
+BUFFER_DIR = "/tmp/traffic_buffer"
 FEEDBACK_FILE = "feedback_ban.log"
 
-WHITELIST = {
-    "127.0.0.1",
-    "192.168.1.1",
-    "192.168.1.5"
-}
-
+WHITELIST = {"127.0.0.1", "192.168.1.1", "192.168.1.5"}
 IP_BANNED = set()
-IP_VOLUME_HISTORY = defaultdict(int)
 
+IP_VOLUME_HISTORY = defaultdict(int)
 data_lock = threading.Lock()
 
-# =========================
-# LOGGING
-# =========================
-
 logging.basicConfig(
-    filename=LOG_FILE,
+    filename="sentinela.log",
     level=logging.INFO,
     format="%(asctime)s - %(message)s"
 )
 
 # =========================
-# FUNÇÕES AUXILIARES
+# UTIL
 # =========================
 
-def validar_ip(ip: str) -> bool:
-    """Validação simples de IP IPv4."""
+def validar_ip(ip):
     try:
         parts = ip.split(".")
         return len(parts) == 4 and all(0 <= int(p) <= 255 for p in parts)
@@ -46,42 +37,40 @@ def validar_ip(ip: str) -> bool:
         return False
 
 
-def registrar_log(msg: str):
-    logging.info(msg)
+def salvar_evento(evento):
+    os.makedirs(BUFFER_DIR, exist_ok=True)
+
+    filename = f"{BUFFER_DIR}/evt_{time.time_ns()}.json"
+
+    with open(filename, "w") as f:
+        json.dump(evento, f)
 
 
 # =========================
-# THREAD: FEEDBACK LOOP
+# FEEDBACK LOOP
 # =========================
 
 def monitorar_feedback():
-    """
-    Lê arquivos de feedback externo (IA ou sistema) 
-    e atualiza lista de IPs banidos.
-    """
     while True:
         try:
             if os.path.exists(FEEDBACK_FILE):
                 with open(FEEDBACK_FILE, "r") as f:
                     for line in f:
                         ip = line.strip()
-
                         if validar_ip(ip):
                             with data_lock:
                                 IP_BANNED.add(ip)
 
-                            registrar_log(f"[BAN ADDED] {ip}")
-
                 os.remove(FEEDBACK_FILE)
 
         except Exception as e:
-            registrar_log(f"[FEEDBACK ERROR] {e}")
+            logging.error(f"feedback error: {e}")
 
         time.sleep(2)
 
 
 # =========================
-# CAPTURA DE PACOTES
+# CAPTURA
 # =========================
 
 def packet_callback(packet):
@@ -90,36 +79,39 @@ def packet_callback(packet):
             return
 
         ip_src = packet[IP].src
-        size = len(packet)
-        summary = packet.summary()
 
         if not validar_ip(ip_src):
             return
 
+        if ip_src in WHITELIST or ip_src in IP_BANNED:
+            return
+
+        evento = {
+            "ip": ip_src,
+            "size": len(packet),
+            "summary": packet.summary(),
+            "timestamp": time.time()
+        }
+
         with data_lock:
-            # bloqueios
-            if ip_src in WHITELIST:
-                return
+            IP_VOLUME_HISTORY[ip_src] += evento["size"]
 
-            if ip_src in IP_BANNED:
-                return
+        salvar_evento(evento)
 
-            # histórico de volume
-            IP_VOLUME_HISTORY[ip_src] += size
-
-        msg = f"SRC={ip_src} SIZE={size}B SUMMARY={summary}"
-        registrar_log(msg)
+        logging.info(f"EVENT {ip_src} {evento['size']}B")
 
     except Exception as e:
-        registrar_log(f"[PACKET ERROR] {e}")
+        logging.error(f"packet error: {e}")
 
 
 # =========================
-# THREAD: MONITOR PRINCIPAL
+# MAIN
 # =========================
 
-def iniciar_monitoramento():
-    print("[*] Sentinela ativo... monitorando tráfego de rede")
+def iniciar():
+    print("[*] Sentinela V2 ativo...")
+
+    threading.Thread(target=monitorar_feedback, daemon=True).start()
 
     sniff(
         filter="ip",
@@ -128,14 +120,5 @@ def iniciar_monitoramento():
     )
 
 
-# =========================
-# MAIN
-# =========================
-
 if __name__ == "__main__":
-    # thread de feedback (IA ou sistema externo)
-    t = threading.Thread(target=monitorar_feedback, daemon=True)
-    t.start()
-
-    # inicia sniffing
-    iniciar_monitoramento()
+    iniciar()
