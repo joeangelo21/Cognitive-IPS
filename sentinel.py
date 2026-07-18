@@ -1,20 +1,20 @@
 import os
 from scapy.all import sniff, IP, TCP
 
-# Caminho deve coincidir com o LOG_FILE do auditoria7.py (mesma pasta)
+# Path must match LOG_FILE in audit8.py (same folder)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(BASE_DIR, "monitoramento_rede.log")
-# Adicionado 192.168.1.254 à whitelist para evitar monitoramento do gateway
+LOG_FILE = os.path.join(BASE_DIR, "network_monitoring.log")
+# Added 192.168.1.254 to whitelist to avoid gateway monitoring
 WHITELIST = ["192.168.1.5", "192.168.1.86", "192.168.1.254"]
 
-def log_para_auditoria(ip, size, payload):
+def log_to_audit(ip, size, payload):
     if ip in WHITELIST:
         return
     try:
         with open(LOG_FILE, "a") as f:
             f.write(f"SRC: {ip} | SIZE: {size}B | PAYLOAD: {payload}\n")
     except Exception as e:
-        print(f"Erro ao logar: {e}")
+        print(f"Logging error: {e}")
 
 def packet_callback(packet):
     if IP not in packet:
@@ -26,23 +26,23 @@ def packet_callback(packet):
 
     size = len(packet)
 
-    # Se for TCP com payload, extrai um resumo seguro do conteúdo;
-    # caso contrário usa o resumo padrão do pacote (cobre UDP/ICMP/etc.)
+    # If TCP with payload, extract secure summary;
+    # otherwise uses default packet summary (covers UDP/ICMP/etc.)
     if TCP in packet and bytes(packet[TCP].payload):
         payload = str(bytes(packet[TCP].payload))[:100]
     else:
         payload = packet.summary()
 
-    log_para_auditoria(ip, size, payload)
+    log_to_audit(ip, size, payload)
 
 if __name__ == "__main__":
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     open(LOG_FILE, 'a').close()
 
-    print("[*] Sentinela rodando...")
-    print(f"[*] Protegendo: {WHITELIST}")
+    print("[*] Sentinel running...")
+    print(f"[*] Protecting: {WHITELIST}")
 
     try:
         sniff(filter="ip", prn=packet_callback, store=False)
     except KeyboardInterrupt:
-        print("\n[*] Sentinela parada pelo operador.")
+        print("\n[*] Sentinel stopped by operator.")

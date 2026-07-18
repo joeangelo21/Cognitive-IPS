@@ -1,0 +1,28 @@
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 A
+SRC: 3.174.26.14 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 3.174.26.14:https > 192.168.1.5:51342 A
+SRC: 3.174.26.14 | SIZE: 105B | PAYLOAD: b'\x17\x03\x03\x00"w\xccI\n\xe8\xa7\xa1\x1dT\xd8\xcc:\x0f\x9e8~)\xfd\xc4\x92Q,\x9e~\x15T\xa7yV\x1f\x
+SRC: 52.191.218.117 | SIZE: 105B | PAYLOAD: b'\x17\x03\x03\x00"\xaf\xe6\x1e\x8aM\x80\xb1e\x9bw\xe7K\xe7\xad\xcc\xa3\x18\xe6\xb9j6\x9e\xc5\x8a\xd
+SRC: 140.82.114.22 | SIZE: 105B | PAYLOAD: b'\x17\x03\x03\x00"AR\xa4.3\x9a\x0f\xc3f\x90\xc4P>\xcf\xa8\xd6\x1fp\xee\x13MVf\xfe"\xab\xeak*qX3\x80
+SRC: 140.82.114.22 | SIZE: 105B | PAYLOAD: b'\x17\x03\x03\x00"\xfaQ\xd8\xf8\xfa4Y\xa0B\xd20\x8d\xb1\xb3e!\xc0\xb9?N3\xdd\x8dI\x01l\xa4\x8dQ\x8e
+SRC: 140.82.114.22 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 140.82.114.22:https > 192.168.1.5:58814 A
+SRC: 140.82.114.22 | SIZE: 90B | PAYLOAD: b'\x17\x03\x03\x00\x13\xcc\x8e\xf7J\xec2\xbdO\xfb\xcc\x87T\x14\xdf\x9b\xf7\x82C\x99'
+SRC: 140.82.114.22 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 140.82.114.22:https > 192.168.1.5:58814 FA
+SRC: 140.82.112.26 | SIZE: 91B | PAYLOAD: b'\x17\x03\x03\x00\x14\x1e{\xf7\xb7\xdd\x96\xd4SS\xc8\x90\xff2v\xe0\x8eB\x16\x99\x1c'
+SRC: 140.82.112.26 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 140.82.112.26:https > 192.168.1.5:36394 A
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 A
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 A
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 A
+SRC: 3.174.26.14 | SIZE: 105B | PAYLOAD: b'\x17\x03\x03\x00"\x89\xea\xb8\x07\te\xa5\xe6.\xb2\xe9\xd3\x11\\\xaau\xba\xca\x13\x0b\x86\xd7\x92 \
+SRC: 52.191.218.117 | SIZE: 105B | PAYLOAD: b'\x17\x03\x03\x00"\xc9\xc7\x1f8\xbc\xec\xc7\xd9\xf0\x05\xb7\xfc\xf9\xa9\xaf!\x98@2\x82\x874D\xda\n\
+SRC: 140.82.112.26 | SIZE: 91B | PAYLOAD: b'\x17\x03\x03\x00\x14J\xb6sE\xa9\t\xf3\xfc(\x12\x06\xe8>\xde\xb7\x9c\xafh\x9c\xd4'
+SRC: 140.82.112.26 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 140.82.112.26:https > 192.168.1.5:36394 A
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 A
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 A
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 A
+SRC: 3.174.26.14 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 3.174.26.14:https > 192.168.1.5:51342 A
+SRC: 3.174.26.14 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 3.174.26.14:https > 192.168.1.5:51342 FA
+SRC: 3.174.26.14 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 3.174.26.14:https > 192.168.1.5:51342 A
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 A
+SRC: 52.191.218.117 | SIZE: 90B | PAYLOAD: b'\x17\x03\x03\x00\x13\x8dg\x8a\xae\x1ex\x0f\x16\xd37D\xf0!2\xf7q\xceG\xf1'
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 FA
+SRC: 52.191.218.117 | SIZE: 66B | PAYLOAD: Ether / IP / TCP 52.191.218.117:https > 192.168.1.5:39662 A
