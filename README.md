@@ -3,34 +3,33 @@
 Experimental Intrusion Detection and Prevention System (IDS/IPS) that runs entirely on your local machine, with no cloud dependency. It captures network traffic in real-time, filters suspicious packets, and leverages a local Large Language Model (via Ollama) to classify and automatically ban hostile IPs if necessary.
 
 ## 🧠 Architecture
-
-Network Traffic
-│
-▼
-┌─────────────────┐
-│   sentinel.py   │  Captures packets (Scapy) and applies whitelist
-└────────┬────────┘
-│ Writes log entries
-▼
-network_monitoring.log
-│
-▼
-┌─────────────────┐
-│    audit.py     │  Reads log in real-time (tail -f)
-└────────┬────────┘
-│ If payload contains suspicious terms
-▼
-┌─────────────────┐
-│  Ollama (Local) │  qwen2.5-coder:3b classifies the payload
-└────────┬────────┘
-│ NORMAL / FLOOD_ATTACK / CRITICAL_ATTACK
-▼
-Risk score per IP (persisted in risks.json)
-│
-▼
-Threshold reached? ──► Automatic ban via iptables
-
-Both programs run in parallel, as independent processes, connected only by the log file — this keeps packet capture (which requires root privileges) isolated from the AI analysis.
+```text
+       Network Traffic
+              │
+              ▼
+    ┌────────────────────┐
+    │    sentinel.py     │ Captures packets & applies whitelist
+    └──────────┬─────────┘
+               │ Writes logs
+               ▼
+    ┌──────────────────────┐
+    │ network_monitoring.log│
+    └──────────┬───────────┘
+               │ Reads log
+               ▼
+    ┌────────────────────┐
+    │      audit.py      │ AI Analysis
+    └──────────┬─────────┘
+               │
+               ▼
+    ┌────────────────────┐
+    │    Ollama (LLM)    │ Classifies payload
+    └──────────┬─────────┘
+               │
+               ▼
+    ┌────────────────────┐
+    │      iptables      │ Automatic Ban
+    └────────────────────┘
 
 ## ⚙️ Components
 
