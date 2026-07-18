@@ -1,7 +1,7 @@
 import os
 from scapy.all import sniff, IP, TCP
 
-# Path must match LOG_FILE in audit8.py (same folder)
+# Path must match LOG_FILE in audit.py (same folder)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "network_monitoring.log")
 # Added 192.168.1.254 to whitelist to avoid gateway monitoring

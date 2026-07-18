@@ -15,7 +15,7 @@ from rich import box
 # ==============================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "network_monitoring.log")
-BAN_LOG = os.path.join(BASE_DIR, "execution_bans.log")
+BAN_LOG = os.path.join(BASE_DIR, "bans.log")
 
 # STRICT WHITELIST (Only authorized IPs)
 WHITELIST_IPS = ["192.168.1.5", "192.168.1.86", "192.168.1.254"]
@@ -101,7 +101,6 @@ def monitor_queue():
                 now = time.time()
                 if now - last_check >= 1:
                     live.update(generate_dashboard())
-                    # Reset pps, but keep history and alerts
                     for ip in history_ips:
                         history_ips[ip] = 0
                     last_check = now
