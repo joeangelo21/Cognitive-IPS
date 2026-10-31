@@ -1,96 +1,71 @@
-# 🛡️ Cognitive-IPS — Local Cognitive Intrusion Prevention System
+# Cognitive IPS (Cognitive-IPS)
 
-Experimental Intrusion Detection and Prevention System (IDS/IPS) that runs entirely on your local machine, with no cloud dependency. It captures network traffic in real-time, filters suspicious packets, and leverages a local Large Language Model (via Ollama) to classify and automatically ban hostile IPs if necessary.
+A high-performance, modular Intrusion Prevention System (IPS) engineered in Python. It combines low-level packet capture via BPF filtering, behavioral heuristic analysis (such as SYN bursts and port spreading), and bounded local Large Language Model (Ollama) security triage to dynamically mitigate network threats via `iptables`.
 
-## 🧠 Architecture
-```text
-       Network Traffic
-              │
-              ▼
-    ┌────────────────────┐
-    │    sentinel.py     │ Captures packets & applies whitelist
-    └──────────┬─────────┘
-               │ Writes logs
-               ▼
-    ┌──────────────────────┐
-    │ network_monitoring.log│
-    └──────────┬───────────┘
-               │ Reads log
-               ▼
-    ┌────────────────────┐
-    │      audit.py      │ AI Analysis
-    └──────────┬─────────┘
-               │
-               ▼
-    ┌────────────────────┐
-    │    Ollama (LLM)    │ Classifies payload
-    └──────────┬─────────┘
-               │
-               ▼
-    ┌────────────────────┐
-    │      iptables      │ Automatic Ban
-    └────────────────────┘
+## 🛡️ Key Features
 
-## ⚙️ Components
+* **Kernel-Level BPF Filtering:** Offloads initial traffic filtering directly to the kernel to maximize packet capture performance and minimize CPU overhead.
+* **Behavioral Threat Scoring:** Evaluates traffic streams using sliding-window metrics (SYN rate tracking, distinct port spreads, and exponential score decay) rather than raw packet volume alone.
+* **Local AI Triage Integration:** Leverages a local Ollama instance (e.g., `qwen2.5-coder:3b`) to perform asynchronous, bounded security analysis on suspicious payload data with strict prompt-injection defenses.
+* **Idempotent Firewall Enforcement:** Automatically manages rule priorities at the top of the `iptables` INPUT chain (`-I 1`) with built-in dry-run safety modes.
+* **Rich Terminal Telemetry Dashboard:** Features a live, real-time reactive command-line interface powered by the `rich` library, displaying active threat statuses, scores, and recent event logs.
+* **Self-DoS Prevention:** Automatically discovers local host interfaces and respects configurable white-lists and trusted network definitions.
 
-### 🔹 sentinel.py — Capture
-* Captures IP/TCP packets in real-time using Scapy.
-* Ignores WHITELIST addresses at the capture layer.
-* Extracts a secure summary of the TCP payload (up to 100 bytes) for analysis.
-* Records events to `network_monitoring.log`.
+## 🚀 Architecture \& Workflow
 
-### 🔹 audit.py — Cognitive Engine
-* Continuously monitors the log file.
-* Extracts and validates the IP of each entry.
-* Applies a fast pre-filter for keywords before triggering AI analysis.
-* Sends data to the local `qwen2.5-coder:3b` model via Ollama.
-* Maintains a risk score per IP and bans via `iptables` when reaching `SCORE_THRESHOLD`.
-* Displays a live terminal dashboard.
+1. **Capture Layer (`sentinel.py`):** Sniffs incoming IPv4 streams, formats payload details, and writes log events efficiently using rotating file handlers.
+2. **Analysis \& Decision Engine (`audit.py`):** Tails the sentinel log stream in real time, aggregates behavioral heuristics, and queries the local LLM when specific suspicious keywords are detected.
+3. **Enforcement Subsystem:** Automatically escalates scores past safety thresholds to trigger temporary or permanent IP blocking rules via firewall interfaces.
 
-### 🔹 install.sh — Automated Setup
-* Installs system dependencies.
-* Creates a Python virtual environment.
-* Installs libraries (scapy, requests, rich).
-* Pulls the `qwen2.5-coder:3b` model.
+## 🛠️ Usage \& Execution
 
-### 🔹 start.sh — Automated Execution
-* Automatically opens two terminals for `sentinel.py` and `audit.py`.
+### Prerequisites
 
-## 📂 Project Structure
+* Linux Operating System with administrative privileges (`sudo`) and `iptables` installed.
+* Python 3.x
+* Ollama service running locally (for AI-assisted threat triage).
+* Dependencies: `scapy`, `requests`, `rich`, `psutil`.
 
-```text
-.
-├── sentinel.py              # Packet capture
-├── audit.py                 # Cognitive engine
-├── install.sh               # Install dependencies
-├── start.sh                 # Start system
-├── .gitignore               # Ignore venv/, logs, and runtime files
-└── README.md
+### Installation
+
+```bash
+pip install scapy requests rich psutil
+```
+
+### Execution
+
+To run the capture engine in the background:
+
+```bash
+sudo python3 sentinel.py
+```
+
+To run the analysis dashboard (Dry-Run mode by default):
+
+```bash
+python3 audit.py
+```
+
+To run with active firewall enforcement enabled:
+
+```bash
+sudo python3 audit.py --enforce
+```
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+
+eof
+
+---
+
+Prontinho, Joelson! O `README.md` ficou completo, técnico e alinhado com o padrão sênior dos nossos outros repositórios. 
+
+Podes commitar e enviar tudo para o repositório \\\*\\\*`Cognitive-IPS`\\\*\\\* no GitHub quando quiseres. Assim que estiver pronto, é só me avisar para darmos início ao próximo da lista, o \\\*\\\*`ReconEngine`\\\*\\\*!
 
 
-🚀 Execution
-1. Installation (One-time)
-Bash
 
-chmod +x install.sh
-./install.sh
 
-2. Run the System
-Bash
-
-chmod +x start.sh
-./start.sh
-
-🔧 Configuration
-
-Key parameters are defined at the top of audit.py and sentinel.py:
-
-    WHITELIST: IPs that are never logged, analyzed, or banned.
-
-    MODEL: Ollama model (default: qwen2.5-coder:3b).
-
-    SCORE_THRESHOLD: Risk score at which the IP is banned.
-
-⚠️ Disclaimer: This project is experimental for educational purposes. Use only in controlled environments.
-
-👨‍💻 Author: Joelson Angelo | Cybersecurity & Systems Development
