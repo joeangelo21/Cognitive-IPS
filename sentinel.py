@@ -1,15 +1,19 @@
-"""sentinel.py - capture layer. Sniffs IPv4 traffic and writes one line per packet.
+"""sentinel.py - capture layer. Sniffs IPv4 and IPv6 traffic, one log line per packet.
 
 Line format (parsed by audit.py):
 SRC: <ip> | DPORT: <port|-> | FLAGS: <tcp flags|-> | SIZE: <n>B | PAYLOAD: <text>
+
+Usage:
+    sudo python3 sentinel.py                      # default interface
+    sudo python3 sentinel.py --iface eth0 --iface docker0
 """
-import ipaddress
+import argparse
 import logging
 import os
 import sys
 from logging.handlers import RotatingFileHandler
 
-from scapy.all import IP, TCP, UDP, sniff
+from scapy.all import IP, TCP, UDP, IPv6, sniff
 
 import config
 
@@ -26,20 +30,24 @@ def setup_logger():
 
 
 def build_bpf():
-    """Filter in the kernel (BPF) instead of in Python: far cheaper per packet."""
-    hosts = [ip for ip in (config.WHITELIST_IPS | config.LOCAL_IPS)
-             if ipaddress.ip_address(ip).version == 4]
-    nets = [str(n) for n in config.TRUSTED_NETWORKS if n.version == 4]
-    excluded = [f"src host {h}" for h in sorted(hosts)] + [f"src net {n}" for n in nets]
+    """Filter in the kernel (BPF) instead of in Python: far cheaper per packet.
+    Works for IPv4 and IPv6 hosts/networks alike."""
+    hosts = sorted(config.WHITELIST_IPS | config.LOCAL_IPS)
+    nets = [str(n) for n in config.TRUSTED_NETWORKS]
+    excluded = [f"src host {h}" for h in hosts] + [f"src net {n}" for n in nets]
+    base = "(ip or ip6)"
     if not excluded:
-        return "ip"
-    return "ip and not (" + " or ".join(excluded) + ")"
+        return base
+    return f"{base} and not (" + " or ".join(excluded) + ")"
 
 
 def packet_callback(packet):
-    if IP not in packet:
+    if IP in packet:
+        ip = packet[IP].src
+    elif IPv6 in packet:
+        ip = packet[IPv6].src
+    else:
         return
-    ip = packet[IP].src
     if config.is_trusted(ip):  # defense in depth (BPF already filters)
         return
 
@@ -61,14 +69,25 @@ def packet_callback(packet):
 
 
 def main():
+    ap = argparse.ArgumentParser(description="Cognitive-IPS packet capture")
+    ap.add_argument("--iface", action="append", default=None,
+                    help="interface to sniff (repeatable). Default: scapy's default route "
+                         "interface. Add docker0/br-* to also see container traffic.")
+    args = ap.parse_args()
+
     if os.geteuid() != 0:
         sys.exit("[!] sentinel needs root to capture packets (sudo python3 sentinel.py)")
+    if not config.LOCAL_IPS:
+        print("[!] Could not detect this host's own IPs ('hostname -I' failed). "
+              "Outgoing traffic may be scored as if it were an attacker; add your "
+              "IPs to WHITELIST_IPS in config.py.")
     setup_logger()
     bpf = build_bpf()
-    print("[*] Sentinel running...")
+    print("[*] Sentinel running (IPv4 + IPv6)...")
+    print(f"[*] Interfaces: {args.iface or 'default'}")
     print(f"[*] BPF filter: {bpf}")
     try:
-        sniff(filter=bpf, prn=packet_callback, store=False)
+        sniff(filter=bpf, prn=packet_callback, store=False, iface=args.iface)
     except KeyboardInterrupt:
         print("\n[*] Sentinel stopped by operator.")
 
